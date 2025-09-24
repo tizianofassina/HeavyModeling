@@ -1,0 +1,24 @@
+# ================================
+# COMET Model Config for Frechet
+# ================================
+
+# Model parameters
+a: 0.0
+b: 0.99
+hidden_ds: [64, 64, 64]       # Hidden layer dimensions
+
+# Training parameters
+max_epochs: 300                 # Maximum number of epochs
+lr: 1e-4                        # Learning rate
+batch_size: 256                 # Training batch size
+batch_gen: 10_000               # Batch size for generation
+total_samples: 5_000_000           # Total number of samples to generate
+strategy: "auto"                # Training strategy (e.g., ddp)
+
+# Noise / Data settings
+conditional_noise: False        # Whether to use conditional noise
+noise_datamodule: False         # Whether to use a dynamic noise DataModule
+normalize_data: False           # Whether to normalize data
+
+# Hardware / DataLoader settings
+num_workers: 0      #8             # Number of DataLoader workers

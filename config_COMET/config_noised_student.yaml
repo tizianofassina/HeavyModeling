@@ -1,0 +1,25 @@
+# ================================
+# COMET Model Config for Student
+# ================================
+
+# Model parameters
+a: 0.05
+b: 0.95
+hidden_ds: [64, 64, 64]       # Hidden layer dimensions
+
+# Training parameters
+max_epochs: 10                  # Maximum number of epochs
+lr: 1e-4                        # Learning rate
+batch_size: 256                 # Training batch size
+batch_gen: 10_000               # Batch size for generation
+total_samples: 5_00_000           # Total number of samples to generate
+strategy: "auto"                # Training strategy (e.g., ddp)
+
+# Noise / Data settings
+conditional_noise: False        # Whether to use conditional noise
+noise_datamodule: True         # Whether to use a dynamic noise DataModule
+sigma : 8
+normalize_data: False           # Whether to normalize data
+
+# Hardware / DataLoader settings
+num_workers: 0   #8               # Number of DataLoader workers
