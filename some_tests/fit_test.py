@@ -37,12 +37,14 @@ def montecarlo_conditional_prob(alpha_star: float, x: np.ndarray, t: float) -> f
     Returns:
         float: Estimated conditional probability.
     """
-    q = - (1.0 / alpha_star) * np.log(-np.log(t))
-    q = np.exp(q)
-    mask = x[:, 1] > q
+    q_1 = - (1.0 / alpha[1]) * np.log(-np.log(t))
+    q_0 = (1.0 / alpha[0]) * np.log(-np.log(t))
+    q_1 = np.exp(q_1)
+    q_0 = np.exp(q_0)
+    mask = x[:, 1] > q_1
     if mask.sum() == 0:
         return 0.0
-    joint = np.logical_and(x[:, 0] > q, mask).sum()
+    joint = np.logical_and(x[:, 0] > q_0, mask).sum()
     return joint / mask.sum()
 
 

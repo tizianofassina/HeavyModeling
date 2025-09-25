@@ -41,15 +41,8 @@ class PositionalEncoding(torch.nn.Module):
         return x
 
 class FNetGroupNorm(nn.Module):
-    def __init__(
-        self,
-        input_dim,
-        embed_dim=128,
-        sigma_max=80,
-        sigma_min=0.02,
-        sigma_disc=1000,
-        channel_mult=[1, 2, 3],
-    ):
+    def __init__(self, input_dim, embed_dim=128, sigma_max=80, sigma_min=0.02,
+                 sigma_disc=1000, channel_mult=[1,2,3]):
         super().__init__()
         self.sigma_max = sigma_max
         self.sigma_min = sigma_min
@@ -65,7 +58,7 @@ class FNetGroupNorm(nn.Module):
             layers += [
                 nn.Linear(in_dim, out_dim),
                 nn.GroupNorm(num_groups=8, num_channels=out_dim),
-                nn.SiLU(),
+                nn.SiLU()
             ]
             in_dim = out_dim
 
@@ -89,7 +82,7 @@ class Denoiser(torch.nn.Module):
         self.sigma_data = sigma_data
         self.sigma_min = sigma_min
         self.sigma_max = sigma_max
-        self.fnet = FNetGroupNorm(sigma_min=sigma_min, sigma_max=sigma_max, **kwargs)
+        self.fnet = FNetGroupNorm(sigma_min=sigma_min, sigma_max=sigma_max,  **kwargs)
 
     def forward(self, x, sigma):
         c_skip = self.sigma_data**2 / (sigma**2 + self.sigma_data**2)
@@ -111,6 +104,8 @@ class AbstractDiffusion(L.LightningModule):
         diffusion_config,
         batch_size,
         validation_sigmas=[0.1, 0.3, 0.5, 1, 2, 4, 8, 10],
+        device=torch.device("cpu"),
+        dtype=torch.float32,
         **kwargs,
     ):
         super().__init__()
@@ -118,7 +113,9 @@ class AbstractDiffusion(L.LightningModule):
         self.diffusion_config = diffusion_config
         self.validation_sigmas = validation_sigmas
         self.denoiser_config = denoiser_config
-        self.denoiser = Denoiser(**denoiser_config)
+        self.device_ = device
+        self.dtype_ = dtype
+        self.denoiser = Denoiser(**denoiser_config).to(device=device, dtype=dtype)
         self.automatic_optimization = True
         self.batch_size = batch_size
 
@@ -138,7 +135,7 @@ class AbstractDiffusion(L.LightningModule):
         self.log("train/mse", loss.item(), prog_bar=True)
         return loss
 
-    
+
     def log_sigma_mse_curve(self, batch, step_or_epoch, mode="train"):
         num_sigmas = 50
         sigmas = torch.logspace(
@@ -148,7 +145,7 @@ class AbstractDiffusion(L.LightningModule):
                 device=self.device,
                 dtype=batch["data_sample"].dtype,
             )
-        data = batch["data_sample"].float()  
+        data = batch["data_sample"].float()
         batch_shape = data.shape
         B = batch_shape[0]
 
@@ -160,7 +157,7 @@ class AbstractDiffusion(L.LightningModule):
 
         sigma_input = sigmas.repeat_interleave(B)
         noisy_flat = noisy.reshape(num_sigmas * B, *batch_shape[1:])
-        
+
         with torch.no_grad():
             out_flat = self.denoiser(noisy_flat, sigma_input)
         out = out_flat.reshape(num_sigmas, B, *batch_shape[1:])
@@ -172,7 +169,7 @@ class AbstractDiffusion(L.LightningModule):
             * sigmas[:, None]
             / (self.denoiser.sigma_data ** 2 + sigmas[:, None] ** 2).sqrt()
         )
-        weights = 1 / (cout ** 2)  
+        weights = 1 / (cout ** 2)
         mse_weighted = (mse * weights[:, None]).mean(dim=list(range(1, mse.ndim))).cpu().numpy()
 
 
@@ -192,8 +189,8 @@ class AbstractDiffusion(L.LightningModule):
         img_t = T.ToTensor()(img)
 
         self.logger.experiment.add_image(f"{mode}_log_sigma_mse_curve", img_t, step_or_epoch)
-        
-        
+
+
     def validation_step(self, batch, batch_idx):
         data_shape = tuple(batch["data_sample"].shape)
         noise = torch.randn(
@@ -234,8 +231,8 @@ class AbstractDiffusion(L.LightningModule):
                 prog_bar=False,
                 sync_dist=True,
             )
-        
-        
+
+
     def on_validation_epoch_end(self):
         if self.current_epoch % 50 == 0:
             try:
@@ -244,8 +241,8 @@ class AbstractDiffusion(L.LightningModule):
                 batch = None
             if batch is not None:
                 self.log_sigma_mse_curve(batch, self.current_epoch, mode="val")
-            
-            
+
+
     def on_before_optimizer_step(self, optimizer):
         norms = {
             **{
@@ -268,12 +265,12 @@ class AbstractDiffusion(L.LightningModule):
         )
         scheduler = {
             'scheduler': torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer, 
-                T_max=self.trainer.max_epochs 
+                optimizer,
+                T_max=self.trainer.max_epochs
             ),
             'interval': 'epoch',
             'frequency': 1
             }
-        
+
         return [optimizer], [scheduler]
-        
+

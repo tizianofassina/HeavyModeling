@@ -18,7 +18,7 @@ denoiser_config :
      sigma_disc : 1000   
      input_dim : 7
      embed_dim : 256   
-     channel_mult : [2 ,  2]
+     channel_mult : [1 ,  2]
 
 
 trainer_config:

@@ -290,41 +290,48 @@ if __name__ == "__main__":
     print("Device : ", device)
 
 
-    with open("config_trainer_gen.yaml", "r") as f:
-        config_trainer_gen = yaml.safe_load(f)
 
 
-    alpha = [1.,2.,1.,5.,0.5, 10.]
+
+    alpha = [2., 3.]
 
 
     # --- GENERATING DATA ---
 
     set_seed(42)
-    dim = 6
+    dim = len(alpha)
     sample = st.chi2(df=1).rvs(size=25)
     weights = np.array(sample / np.sum(sample))
     means = generate_means(dim)
 
 
-    train_mix_gaussian = frechet_gaussian_mixture_choice(alpha=alpha, size=config_trainer_gen["size_training"],
+    train_mix_gaussian = frechet_gaussian_mixture_choice(alpha=alpha, size=100_000,
                                                          theta=3.0, n_components=25, means=means, covariances=None,
                                                          weights=weights, p_frechet=0.5, device=device)
 
-    test_mix_gaussian = frechet_gaussian_mixture_choice(alpha=alpha, size=config_trainer_gen["total_samples"],
+
+    test_mix_gaussian = frechet_gaussian_mixture_choice(alpha=alpha, size=30_000_000,
                                                         theta=3.0, n_components=25, means=means, covariances=None,
                                                         weights=weights, p_frechet=0.5, device=device)
 
     set_seed(42)
-    train_log_frechet = log_frechet_rvs_copula_logistic(alpha = alpha, size = config_trainer_gen["size_training"], theta=3.0, device=device)
-    test_log_frechet = log_frechet_rvs_copula_logistic(alpha = alpha, size = config_trainer_gen["total_samples"], theta=3.0, device=device)
+    train_log_frechet = log_frechet_rvs_copula_logistic(alpha = alpha, size = 100_000, theta=3.0, device=device)
+    test_log_frechet = log_frechet_rvs_copula_logistic(alpha = alpha, size = 30_000_000, theta=3.0, device=device)
+
+    train_log_frechet = log_frechet_rvs_copula_logistic(alpha=alpha, size=100_000,
+                                                        theta=3.0, device=device)
+    train_big_log_frechet = log_frechet_rvs_copula_logistic(alpha=alpha, size=1_000_000, theta=3.0, device=device)
+    test_log_frechet = log_frechet_rvs_copula_logistic(alpha=alpha, size=30_000_000, theta=3.0,
+                                                       device=device)
 
     set_seed(42)
-    train_uniform = uniform_student_mixture(size = config_trainer_gen["size_training"], dim = 2, prob_uniform = 0.95, gp_params = (0.0, 1.0, 1.0), device = device)
-    test_uniform = uniform_student_mixture(size = config_trainer_gen["total_samples"], dim = 2, prob_uniform = 0.95, gp_params = (0.0, 1.0, 1.0), device = device)
+    train_uniform = uniform_student_mixture(size = 100_000, dim = 2, prob_uniform = 0.95, gp_params = (0.0, 1.0, 1.0), device = device)
+    test_uniform = uniform_student_mixture(size = 30_000_000, dim = 2, prob_uniform = 0.95, gp_params = (0.0, 1.0, 1.0), device = device)
 
 
     # --- SAVING DATA ---
-    torch.save(train_log_frechet, "training_frechet.pt")
+    torch.save(train_log_frechet, "training_frechet_10e5.pt")
+    torch.save(train_big_log_frechet, "training_frechet_10e6.pt")
     torch.save(test_log_frechet, "test_frechet.pt")
 
     torch.save(train_uniform, "training_uniform.pt")

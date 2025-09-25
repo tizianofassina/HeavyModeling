@@ -10,6 +10,7 @@ from VE_SGM.data_loader import VEDataModule
 
 seed_value = 1000
 
+
 def check_non_finite(arr: np.ndarray, name: str = ""):
     """
     Check if a numpy array contains NaN or Inf values and print a summary.
@@ -56,7 +57,9 @@ def pipeline_diffusion(
     Returns:
         np.ndarray: Generated samples as a NumPy array.
     """
-
+    device = data.device
+    dtype = torch.float32
+    assert data.device == sample.device
     trainer_cfg = config_diffusion["trainer_config"]
     diffusion_cfg = config_diffusion["diffusion_config"]
     denoiser_cfg = config_diffusion["denoiser_config"]
@@ -76,7 +79,7 @@ def pipeline_diffusion(
 
     # Dataset and DataModule
     dataset = TensorDataset(data)
-    accelerator = "gpu" if data.device.type == "cuda" else "cpu"
+    accelerator = "gpu" if device.type == "cuda" else "cpu"
     data_module = VEDataModule(
         base_dataset=dataset,
         batch_size=trainer_cfg["batch_size"],
@@ -100,7 +103,7 @@ def pipeline_diffusion(
             optim_config=optim_cfg,
             denoiser_config=denoiser_cfg,
             batch_size=trainer_cfg["batch_size"]
-        )
+        ).to(device=device, dtype=dtype)
 
     # Train model
     trainer.fit(model=diffusion_model, datamodule=data_module)
@@ -112,7 +115,7 @@ def pipeline_diffusion(
 
     # Sampling
     diffusion_model.eval()
-    denoiser_fn = diffusion_model.denoiser.eval().requires_grad_(False).to(data.device)
+    denoiser_fn = diffusion_model.denoiser.eval().requires_grad_(False).to(device)
     generated_samples = []
 
     sigma_min = diffusion_cfg["sigma_min"]
@@ -131,7 +134,7 @@ def pipeline_diffusion(
                 sigma_min=sigma_min,
                 sigma_max=sigma_max,
                 rho=7.0,
-                device=sample.device
+                device=device
             )
             if config_diffusion["normalization"]:
                 batch_samples = batch_samples * data_std + data_mean
