@@ -9,7 +9,7 @@ optim_config :
      lr : 1e-4   
 
 denoiser_config :
-     sigma_data : 1.   
+     sigma_data : 2.5   
      sigma_min : 0.0002
      sigma_max : 7
      sigma_disc : 1000   
@@ -20,15 +20,15 @@ denoiser_config :
 normalization : False
 
 trainer_config:
-     max_epochs: 2000
+     max_epochs: 1500
      accelerator: "gpu"
      devices: -1
      batch_size: 10_000
-     batch_gen: 10_000
+     batch_gen: 50_000
      n_steps: 200
      strategy: "ddp"
      num_workers: 6
-     size_training: 100_000
+     
 
 
 

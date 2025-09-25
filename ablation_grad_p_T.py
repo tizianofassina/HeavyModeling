@@ -75,6 +75,7 @@ np.save(generation_dir + "/gen_p_inf_10e5.npy", gen_p_inf_10e5)
 set_seed(1000)
 
 name = "frechet_10e6train"
+
 gen_big_10e6 = pipeline_diffusion(data = data_train_10e6, config_diffusion = configuration, log_dir = log_dir,model_dir = model_dir,name = name, sample = p_T_p_inf)
 gen_p_T_10e6 = gen_big_10e6[:size_gen,:]
 gen_p_inf_10e6 = gen_big_10e6[size_gen:,:]
