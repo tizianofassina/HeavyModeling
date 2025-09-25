@@ -24,7 +24,6 @@ trainer_config:
      accelerator: "gpu"
      devices: -1
      batch_size: 10_000
-     total_samples: 30_000_000
      batch_gen: 10_000
      n_steps: 200
      strategy: "ddp"

@@ -67,8 +67,9 @@ def pipeline_diffusion(
     optim_cfg = config_diffusion["optim_config"]
 
     batch_size_gen = trainer_cfg["batch_gen"]
-    total_samples = trainer_cfg["total_samples"]
-    n_batches = total_samples // batch_size_gen
+    total_samples = sample.shape[0]
+    n_batches = sample.shape[0] // batch_size_gen
+
 
     # Normalize data
     if config_diffusion["normalization"]:
@@ -139,6 +140,9 @@ def pipeline_diffusion(
         data_std = data_std.to(device)
         
     print(f"Starting generation on {device}...")
+    print(f"Total samples: {total_samples}")
+    print(f"Batch size: {batch_size_gen}")
+
     with torch.no_grad():
         for batch_idx in range(n_batches):
             start_idx = batch_idx * batch_size_gen

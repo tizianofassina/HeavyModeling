@@ -321,6 +321,7 @@ if __name__ == "__main__":
     train_log_frechet = log_frechet_rvs_copula_logistic(alpha=alpha, size=100_000,
                                                         theta=3.0, device=device)
     train_big_log_frechet = log_frechet_rvs_copula_logistic(alpha=alpha, size=1_000_000, theta=3.0, device=device)
+    train_enorumous_log_frechet = log_frechet_rvs_copula_logistic(alpha=alpha, size=10_000_000, theta=3.0, device=device)
     test_log_frechet = log_frechet_rvs_copula_logistic(alpha=alpha, size=30_000_000, theta=3.0,
                                                        device=device)
 
@@ -330,9 +331,10 @@ if __name__ == "__main__":
 
 
     # --- SAVING DATA ---
-    torch.save(train_log_frechet, "training_frechet_10e5.pt")
-    torch.save(train_big_log_frechet, "training_frechet_10e6.pt")
-    torch.save(test_log_frechet, "test_frechet.pt")
+    torch.save(train_log_frechet, "training_log_frechet_10e5.pt")
+    torch.save(train_big_log_frechet, "training_log_frechet_10e6.pt")
+    torch.save(train_enorumous_log_frechet, "training_log_frechet_10e7.pt")
+    torch.save(test_log_frechet, "test_log_frechet.pt")
 
     torch.save(train_uniform, "training_uniform.pt")
     torch.save(test_uniform, "test_uniform.pt")
