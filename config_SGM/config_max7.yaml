@@ -15,7 +15,7 @@ denoiser_config :
      sigma_disc : 1000   
      input_dim : 2
      embed_dim : 256   
-     channel_mult : [ 1,   2,   3,   4]
+     channel_mult : [ 2,   4,   4,   2]
 
 normalization : False
 
