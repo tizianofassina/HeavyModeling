@@ -59,7 +59,8 @@ def pipeline_diffusion(
     """
     device = data.device
     dtype = torch.float32
-    assert data.device == sample.device
+    assert data.device == sample.device 
+    assert torch.device("cpu") == data.device
     trainer_cfg = config_diffusion["trainer_config"]
     diffusion_cfg = config_diffusion["diffusion_config"]
     denoiser_cfg = config_diffusion["denoiser_config"]
@@ -79,7 +80,12 @@ def pipeline_diffusion(
 
     # Dataset and DataModule
     dataset = TensorDataset(data)
-    accelerator = "gpu" if device.type == "cuda" else "cpu"
+    if torch.cuda.is_available():
+        accelerator = "gpu"
+        devices = trainer_cfg["devices"]  # -1 va bene per GPU
+    else:
+        accelerator = "cpu"
+        devices = 1
     data_module = VEDataModule(
         base_dataset=dataset,
         batch_size=trainer_cfg["batch_size"],
@@ -91,7 +97,7 @@ def pipeline_diffusion(
     trainer = L.Trainer(
         max_epochs=trainer_cfg["max_epochs"],
         accelerator=accelerator,
-        devices=trainer_cfg["devices"],
+        devices=devices,
         logger=TensorBoardLogger(save_dir=log_dir, name=f"{name}_logger"),
         strategy=trainer_cfg["strategy"]
     )
@@ -103,7 +109,7 @@ def pipeline_diffusion(
             optim_config=optim_cfg,
             denoiser_config=denoiser_cfg,
             batch_size=trainer_cfg["batch_size"]
-        ).to(device=device, dtype=dtype)
+        ).to(dtype=dtype)
 
     # Train model
     trainer.fit(model=diffusion_model, datamodule=data_module)
@@ -113,15 +119,26 @@ def pipeline_diffusion(
     trainer.save_checkpoint(checkpoint_path)
     print(f"{name}_model saved.")
 
-    # Sampling
-    diffusion_model.eval()
-    denoiser_fn = diffusion_model.denoiser.eval().requires_grad_(False).to(device)
-    generated_samples = []
-
+    # GENERATION
+    
+    # WE ENSURE A CORRECT DEVICE AND DTYPE    
     sigma_min = diffusion_cfg["sigma_min"]
     sigma_max = diffusion_cfg["sigma_max"]
     n_steps = trainer_cfg["n_steps"]
+    
+    
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    diffusion_model.eval()
 
+    denoiser_fn = diffusion_model.denoiser.eval().requires_grad_(False).to(device)
+    generated_samples = []
+    sample = sample.to(device=device, dtype=dtype)
+    if config_diffusion["normalization"]:
+        data_mean = data_mean.to(device)
+        data_std = data_std.to(device)
+        
+    print(f"Starting generation on {device}...")
     with torch.no_grad():
         for batch_idx in range(n_batches):
             start_idx = batch_idx * batch_size_gen
@@ -144,7 +161,7 @@ def pipeline_diffusion(
             percent = (batch_idx + 1) / n_batches * 100
             print(f"\r{name} : Generation progress {percent:.1f}% ", end="", flush=True)
 
-        print()
+        
     generation = torch.cat(generated_samples, dim=0).cpu().numpy()
     check_non_finite(generation, name)
     return generation

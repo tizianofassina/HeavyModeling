@@ -3,7 +3,7 @@ diffusion_config :
      sigma_max : 7.
      log_mean : -1.   
      log_std : 1.2
-     num_workers : 8   
+     num_workers : 6  
 
 optim_config :
      lr : 1e-4   
@@ -22,13 +22,13 @@ normalization : False
 trainer_config:
      max_epochs: 2000
      accelerator: "gpu"
-     devices: 1
-     batch_size: 5000
+     devices: -1
+     batch_size: 10_000
      total_samples: 30_000_000
      batch_gen: 10_000
      n_steps: 200
      strategy: "ddp"
-     num_workers: 0
+     num_workers: 6
      size_training: 100_000
 
 

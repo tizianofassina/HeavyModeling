@@ -24,23 +24,23 @@ with open("config_SGM/config_max7.yaml", "r") as f:
 alpha = [3.,4.]
 size_gen = configuration["trainer_config"]["total_samples"]
 
-data_test = torch.load("train_data/test_frechet.pt")
+data_test = torch.load("train_data/test_frechet.pt").to(device="cpu", dtype=dtype)
 data_train_10e5 = torch.load("train_data/training_frechet_10e5.pt")
 data_train_10e6 = torch.load("train_data/training_frechet_10e6.pt")
-data_train_10e5 = data_train_10e5.to(device=device, dtype=dtype)
-data_train_10e6 = data_train_10e6.to(device=device, dtype=dtype)
+data_train_10e5 = data_train_10e5.to(device="cpu", dtype=dtype)
+data_train_10e6 = data_train_10e6.to(device="cpu", dtype=dtype)
 
 sigma = configuration["diffusion_config"]["sigma_max"]
 
-p_0 = torch.tensor(np.exp(log_frechet_rvs_copula_logistic(alpha = alpha, size = size_gen, theta = 3, device = device).detach().cpu().numpy().astype(np.float64)), device = device)
+p_0 = torch.tensor(np.exp(log_frechet_rvs_copula_logistic(alpha = alpha, size = size_gen, theta = 3, device = "cpu").detach().cpu().numpy().astype(np.float64)), device = "cpu")
 check_non_finite_torch(p_0, name = "p_0" )
 
-z = torch.randn_like(p_0)
+z = torch.randn_like(p_0, device = "cpu", dtype=dtype)
 
 p_T = p_0 + sigma * z
 check_non_finite_torch(p_T, name = "p_T" )
 p_inf = math.sqrt(sigma**2 + 1)*z
-p_T_p_inf = torch.cat([p_T, p_inf], dim = 0).to(device=device, dtype=dtype)
+p_T_p_inf = torch.cat([p_T, p_inf], dim = 0).to(device="cpu", dtype=dtype)
 
 
 log_dir = "runs"
@@ -50,6 +50,17 @@ generation_dir = "generation"
 os.makedirs(model_dir, exist_ok = True)
 os.makedirs(log_dir, exist_ok = True)
 os.makedirs(generation_dir, exist_ok = True)
+
+# --- TRAINING WITH 10^5 TRAINING POINTS ---
+
+set_seed(1000)
+
+name = "frechet_10e5train"
+gen_big_10e5 = pipeline_diffusion(data = data_train_10e5, config_diffusion = configuration, log_dir = log_dir,model_dir = model_dir,name = name, sample = p_T_p_inf)
+gen_p_T_10e5 = gen_big_10e5[:size_gen,:]
+gen_p_inf_10e5 = gen_big_10e5[size_gen:,:]
+np.save(generation_dir + "/gen_p_T_10e5.npy", gen_p_T_10e5)
+np.save(generation_dir + "/gen_p_inf_10e5n.py", gen_p_inf_10e5)
 
 
 
@@ -62,18 +73,7 @@ name = "frechet_10e6train"
 gen_big_10e6 = pipeline_diffusion(data = data_train_10e6, config_diffusion = configuration, log_dir = log_dir,model_dir = model_dir,name = name, sample = p_T_p_inf)
 gen_p_T_10e6 = gen_big_10e6[:size_gen,:]
 gen_p_inf_10e6 = gen_big_10e6[size_gen:,:]
-np.save("gen_p_T_10e6", gen_p_T_10e6)
-np.save("gen_p_inf_10e6", gen_p_inf_10e6)
+np.save(generation_dir +"/gen_p_T_10e6", gen_p_T_10e6)
+np.save(generation_dir +"/gen_p_inf_10e6", gen_p_inf_10e6)
 
-
-# --- TRAINING WITH 10^5 TRAINING POINTS ---
-
-set_seed(1000)
-
-name = "frechet_10e5train"
-gen_big_10e5 = pipeline_diffusion(data = data_train_10e5, config_diffusion = configuration, log_dir = log_dir,model_dir = model_dir,name = name, sample = p_T_p_inf)
-gen_p_T_10e5 = gen_big_10e5[:size_gen,:]
-gen_p_inf_10e5 = gen_big_10e5[size_gen:,:]
-np.save(generation_dir + "/gen_p_T_10e5", gen_p_T_10e5)
-np.save(generation_dir + "/gen_p_inf_10e5", gen_p_inf_10e5)
 

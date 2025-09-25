@@ -37,46 +37,28 @@ def to_dict(item):
 
 
 def add_ve_noise(item, sigma_max, sigma_min, log_mean, log_std, **kwargs):
-    """
-    Apply Variance Exploding (VE) Gaussian noise to a data sample.
-
-    Args:
-        item (dict): Dictionary with 'data_sample' tensor.
-        sigma_max (float): Maximum allowed noise level.
-        sigma_min (float): Minimum allowed noise level.
-        log_mean (float): Mean of log-normal distribution for noise scaling.
-        log_std (float): Standard deviation of log-normal distribution for noise scaling.
-        **kwargs: Additional parameters (ignored).
-
-    Returns:
-        dict: Updated dictionary containing:
-            - 'noisy_sample': Tensor with added VE noise.
-            - 'noise_level': Tensor of noise magnitude applied.
-    """
-    device = item["data_sample"].device
     dtype = torch.float32
+    device = item["data_sample"].device  # <-- usa lo stesso device del tensore
 
-    # Convert parameters to tensors on the same device
-    sigma_max = torch.tensor(sigma_max, device=device, dtype=dtype)
-    sigma_min = torch.tensor(sigma_min, device=device, dtype=dtype)
-    log_mean = torch.tensor(log_mean, device=device, dtype=dtype)
-    log_std = torch.tensor(log_std, device=device, dtype=dtype)
+    # Parametri su device corretto
+    sigma_max = torch.tensor(sigma_max, dtype=dtype, device=device)
+    sigma_min = torch.tensor(sigma_min, dtype=dtype, device=device)
+    log_mean = torch.tensor(log_mean, dtype=dtype, device=device)
+    log_std = torch.tensor(log_std, dtype=dtype, device=device)
 
-    # Sample noise level from log-normal distribution
+    # Noise level
     noise_level = (
-        (torch.randn(size=(1,), device=device, dtype=dtype) * log_std + log_mean)
+        (torch.randn(size=(1,), dtype=dtype, device=device) * log_std + log_mean)
         .exp()
         .clip(sigma_min, sigma_max)
     )
 
-    # Apply noise to the data sample
-    item["data_sample"] = item["data_sample"].to(dtype=dtype)
-    noisy = item["data_sample"] + torch.randn_like(item["data_sample"], device=device, dtype=dtype) * noise_level
+    noisy = item["data_sample"] + torch.randn_like(item["data_sample"], device=device) * noise_level
 
     return {
         **item,
-        "noise_level": noise_level.squeeze(0).to(dtype=torch.float32, device=device), 
-        "noisy_sample": noisy.to(dtype=dtype),
+        "noise_level": noise_level.squeeze(0), 
+        "noisy_sample": noisy,
     }
 
 

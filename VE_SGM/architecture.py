@@ -137,30 +137,33 @@ class AbstractDiffusion(L.LightningModule):
 
 
     def log_sigma_mse_curve(self, batch, step_or_epoch, mode="train"):
+        device = self.device
+        dtype = torch.float32
+
         num_sigmas = 50
         sigmas = torch.logspace(
-                math.log10(self.denoiser.sigma_min),
-                math.log10(self.denoiser.sigma_max),
-                steps=num_sigmas,
-                device=self.device,
-                dtype=batch["data_sample"].dtype,
-            )
-        data = batch["data_sample"].float()
+                    math.log10(self.denoiser.sigma_min),
+                    math.log10(self.denoiser.sigma_max),
+                    steps=num_sigmas,
+                    device=device,
+                    dtype=dtype,
+                )
+        data = batch["data_sample"].to(device, dtype=dtype)
         batch_shape = data.shape
         B = batch_shape[0]
-
         data_rep = data.unsqueeze(0).expand(num_sigmas, *batch_shape)
-        noise = torch.randn_like(data_rep[0])
-        sigmas_rep = sigmas[:, None].view(num_sigmas, *([1] * (data.ndim)))
+        noise = torch.randn_like(data_rep[0], device=device)
+        sigmas_rep = sigmas[:, None].view(num_sigmas, *([1] * (data.ndim))).to(device)
 
         noisy = data_rep + sigmas_rep * noise[None, :]
 
         sigma_input = sigmas.repeat_interleave(B)
         noisy_flat = noisy.reshape(num_sigmas * B, *batch_shape[1:])
 
+        # Forward
         with torch.no_grad():
-            out_flat = self.denoiser(noisy_flat, sigma_input)
-        out = out_flat.reshape(num_sigmas, B, *batch_shape[1:])
+            out_flat = self.denoiser(noisy_flat, sigma_input.to(device))
+            out = out_flat.reshape(num_sigmas, B, *batch_shape[1:])
 
         mse = ((out - data_rep) ** 2)
 
@@ -172,7 +175,7 @@ class AbstractDiffusion(L.LightningModule):
         weights = 1 / (cout ** 2)
         mse_weighted = (mse * weights[:, None]).mean(dim=list(range(1, mse.ndim))).cpu().numpy()
 
-
+        # Plot
         plt.figure(figsize=(6, 4))
         plt.plot(torch.log(sigmas).cpu().numpy(), mse_weighted)
         plt.xlabel("log(sigma)")
@@ -187,9 +190,9 @@ class AbstractDiffusion(L.LightningModule):
 
         img = Image.open(buf).convert("RGB")
         img_t = T.ToTensor()(img)
+       
 
         self.logger.experiment.add_image(f"{mode}_log_sigma_mse_curve", img_t, step_or_epoch)
-
 
     def validation_step(self, batch, batch_idx):
         data_shape = tuple(batch["data_sample"].shape)
