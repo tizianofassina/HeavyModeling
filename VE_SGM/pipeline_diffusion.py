@@ -109,6 +109,7 @@ def pipeline_diffusion(
             diffusion_config=diffusion_cfg,
             optim_config=optim_cfg,
             denoiser_config=denoiser_cfg,
+            validation_sigmas = range(0, int(diffusion_cfg["sigma_max"]), 1),
             batch_size=trainer_cfg["batch_size"]
         ).to(dtype=dtype)
 
