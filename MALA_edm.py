@@ -156,10 +156,10 @@ def generator_edm(
 if __name__ == "__main__":
     device = "cuda:1" if torch.cuda.is_available() else "cpu"
     set_seed(100)
-    batch_size = 2_00_000
+    batch_size = 1_0_000
     d = 1
-    n_MC = 10
-    n_steps_mala = 1000
+    n_MC = 20
+    n_steps_mala = 2000
     step_size = 0.1
     n_steps_edm = 100
     sigma_min = 0.002

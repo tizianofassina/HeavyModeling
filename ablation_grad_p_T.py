@@ -37,6 +37,7 @@ check_non_finite_torch(data_train_10e7)
 
 sigma = configuration["diffusion_config"]["sigma_max"]
 
+
 p_0 = torch.tensor(np.exp(log_frechet_rvs_copula_logistic(alpha = alpha, size = size_gen, theta = 3, device = "cpu").detach().cpu().numpy().astype(np.float64)), device = "cpu")
 check_non_finite_torch(p_0, name = "p_0" )
 
@@ -75,6 +76,7 @@ np.save(generation_dir + "/gen_p_inf_10e5.npy", gen_p_inf_10e5)
 set_seed(1000)
 
 name = "frechet_10e6train"
+
 
 gen_big_10e6 = pipeline_diffusion(data = data_train_10e6, config_diffusion = configuration, log_dir = log_dir,model_dir = model_dir,name = name, sample = p_T_p_inf)
 gen_p_T_10e6 = gen_big_10e6[:size_gen,:]
